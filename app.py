@@ -15,7 +15,7 @@ except LookupError:
     nltk.download('vader_lexicon')
 
 # --- Configuración de la aplicación Streamlit ---
-st.set_page_config(page_title="StreamLive Analytics", page_icon="📺")
+st.set_page_config(page_title="StreamLive Analytics", page_icon="📺", layout="wide")
 
 st.title("StreamLive Analytics: Analizador de Livestream de YouTube")
 st.markdown("""
@@ -153,26 +153,48 @@ if st.session_state.live_chat_id and st.button("Actualizar Comentarios"):
     st.success(f"Comentarios actualizados. La API recomienda esperar {polling_interval:.0f} segundos antes de la próxima solicitud.")
     time.sleep(1) # Pequeña pausa para que el mensaje de éxito se vea
 
-# --- Visualización de resultados ---
+# --- Visualización de resultados del dashboard ---
 if st.session_state.comments:
     df_comments = pd.DataFrame(st.session_state.comments)
     df_comments['timestamp'] = pd.to_datetime(df_comments['timestamp']).dt.tz_convert('America/Argentina/Buenos_Aires')
     
-    st.subheader("Resultados del Análisis")
-    st.metric(label="Comentarios Totales Analizados", value=len(df_comments))
+    st.header("Dashboard de Análisis del Livestream")
     
+    # K.P.I.s (Indicadores Clave de Rendimiento)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Comentarios Totales Analizados", value=len(df_comments))
+    
+    # Análisis de sentimiento básico en un diseño de métricas
+    sentiment_results = perform_sentiment_analysis(df_comments)
+    sentiment_score = sentiment_results.get('Positivo', 0) - sentiment_results.get('Negativo', 0)
+    sentiment_label = "Neutral"
+    if sentiment_score > 0.1:
+        sentiment_label = "Positivo"
+    elif sentiment_score < -0.1:
+        sentiment_label = "Negativo"
+    
+    with col2:
+        st.metric(label="Sentimiento General", value=sentiment_label)
+
+    st.subheader("Gráfico de Comentarios por Minuto")
     # Gráfico de comentarios por minuto (gráfico de líneas)
     comments_per_minute = df_comments.groupby(pd.Grouper(key='timestamp', freq='T')).size().reset_index(name='count')
     comments_per_minute['timestamp'] = comments_per_minute['timestamp'].dt.strftime('%H:%M')
     st.line_chart(comments_per_minute.set_index('timestamp'))
     
-    sentiment_results = perform_sentiment_analysis(df_comments)
-    st.subheader("Análisis de Sentimiento Básico")
+    st.subheader("Análisis de Sentimiento Detallado")
     if not sentiment_results.empty:
         col1, col2, col3 = st.columns(3)
-        with col1: st.metric(label="Positivos", value=f"{sentiment_results.get('Positivo', 0) * 100:.0f}%")
-        with col2: st.metric(label="Neutrales", value=f"{sentiment_results.get('Neutral', 0) * 100:.0f}%")
-        with col3: st.metric(label="Negativos", value=f"{sentiment_results.get('Negativo', 0) * 100:.0f}%")
-        st.dataframe(df_comments[['timestamp', 'text', 'sentiment_category']].tail(50))
+        with col1: 
+            st.metric(label="Positivos", value=f"{sentiment_results.get('Positivo', 0) * 100:.0f}%")
+        with col2: 
+            st.metric(label="Neutrales", value=f"{sentiment_results.get('Neutral', 0) * 100:.0f}%")
+        with col3: 
+            st.metric(label="Negativos", value=f"{sentiment_results.get('Negativo', 0) * 100:.0f}%")
     else:
         st.warning("No hay suficientes comentarios para el análisis de sentimiento.")
+
+    # Tabla con los últimos comentarios
+    st.subheader("Últimos Comentarios")
+    st.dataframe(df_comments[['timestamp', 'text', 'sentiment_category']].tail(50))
