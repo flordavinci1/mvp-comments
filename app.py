@@ -180,8 +180,9 @@ if st.session_state.comments:
     st.subheader("Gráfico de Comentarios por Minuto")
     # Gráfico de comentarios por minuto (gráfico de líneas)
     comments_per_minute = df_comments.groupby(pd.Grouper(key='timestamp', freq='T')).size().reset_index(name='count')
-    comments_per_minute['timestamp'] = comments_per_minute['timestamp'].dt.strftime('%H:%M')
-    st.line_chart(comments_per_minute.set_index('timestamp'))
+    # Use index for x-axis to avoid Streamlit plotting issues with time data
+    comments_per_minute['minute'] = comments_per_minute['timestamp'].dt.strftime('%H:%M')
+    st.line_chart(comments_per_minute['count'])
     
     st.subheader("Análisis de Sentimiento Detallado")
     if not sentiment_results.empty:
