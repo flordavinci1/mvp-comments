@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from googleapient.discovery import build
+from googleapient.errors import HttpError
 from urllib.parse import urlparse, parse_qs
 import re
 import nltk
@@ -46,10 +46,10 @@ def get_video_id(url):
     
     return None
 
-def fetch_live_chat_comments(youtube_service, live_chat_id, max_results=2000):
+def fetch_live_chat_comments(youtube_service, live_chat_id):
     """
     Obtiene todos los comentarios del chat en vivo de un livestream de YouTube.
-    Maneja la paginación para obtener más de 50 comentarios a la vez.
+    Maneja la paginación y espera un intervalo fijo entre solicitudes.
     """
     comments = []
     page_token = None
@@ -71,13 +71,16 @@ def fetch_live_chat_comments(youtube_service, live_chat_id, max_results=2000):
                     "timestamp": comment_time
                 })
             
+            # Obtiene el tiempo de espera recomendado de la respuesta de la API (en milisegundos)
+            polling_interval = response.get('pollingIntervalMillis', 10000) / 1000 # Convierte a segundos
+            
             # Revisa si hay más páginas de comentarios
             page_token = response.get('nextPageToken')
             if not page_token:
                 break
             
-            # Espera 1 segundo para no saturar la API.
-            time.sleep(1)
+            # Espera el tiempo recomendado por la API antes de la próxima solicitud
+            time.sleep(polling_interval)
         
         except HttpError as e:
             if e.resp.status == 400:
@@ -158,7 +161,7 @@ if st.button("Iniciar Análisis"):
                 st.stop()
             
             # Extraer y analizar los comentarios
-            with st.spinner('Extrayendo comentarios y realizando análisis...'):
+            with st.spinner(f'Extrayendo comentarios y realizando análisis. Esto puede tomar un momento...'):
                 comments_list = fetch_live_chat_comments(youtube, live_chat_id)
                 
             if comments_list:
