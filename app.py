@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from googleapient.discovery import build
-from googleapient.errors import HttpError
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from urllib.parse import urlparse, parse_qs
 import re
 import nltk
