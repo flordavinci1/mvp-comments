@@ -156,7 +156,7 @@ if st.session_state.live_chat_id and st.button("Actualizar Comentarios"):
 # --- Visualización de resultados ---
 if st.session_state.comments:
     df_comments = pd.DataFrame(st.session_state.comments)
-    df_comments['timestamp'] = pd.to_datetime(df_comments['timestamp'])
+    df_comments['timestamp'] = pd.to_datetime(df_comments['timestamp']).dt.tz_convert('America/Argentina/Buenos_Aires')
     
     st.subheader("Resultados del Análisis")
     st.metric(label="Comentarios Totales Analizados", value=len(df_comments))
