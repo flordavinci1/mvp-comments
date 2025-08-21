@@ -162,10 +162,9 @@ if st.session_state.comments:
     st.metric(label="Comentarios Totales Analizados", value=len(df_comments))
     
     # Gráfico de comentarios por minuto (gráfico de líneas)
-    df_comments['minute'] = df_comments['timestamp'].dt.to_period('T')
-    comments_per_minute = df_comments.groupby('minute').size().reset_index(name='count')
-    comments_per_minute['minute'] = comments_per_minute['minute'].astype(str)
-    st.line_chart(comments_per_minute.set_index('minute'))
+    comments_per_minute = df_comments.groupby(pd.Grouper(key='timestamp', freq='T')).size().reset_index(name='count')
+    comments_per_minute['timestamp'] = comments_per_minute['timestamp'].dt.strftime('%H:%M')
+    st.line_chart(comments_per_minute.set_index('timestamp'))
     
     sentiment_results = perform_sentiment_analysis(df_comments)
     st.subheader("Análisis de Sentimiento Básico")
